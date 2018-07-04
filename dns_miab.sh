@@ -6,8 +6,8 @@
 #Which will be called by acme.sh to add the txt record to your api system.
 #returns 0 means success, otherwise error.
 #
-#Author: Darven Dissek
-#Report Bugs here: https://framagit.org/DarvenDissek/acme.sh-MIAB-DNS-API/
+#Author: Neilpang
+#Report Bugs here: https://github.com/Neilpang/acme.sh
 #
 ########  Public functions #####################
 
@@ -53,10 +53,9 @@ dns_miab_add() {
 
 
   #Add the challenge record
-  #result="$(_miab_post $MIAB_Username $MIAB_Password $txtvalue $baseurl "POST")"
-  result="$(_miab_post $txtvalue $baseurl "" "POST" "" $MIAB_Username $MIAB_Password)"
+  result="$(_miab_post "$txtvalue" "$baseurl" "" "POST" "" "$MIAB_Username" "$MIAB_Password")"
 
-  _debug result $result
+  _debug result "$result"
 
 
   ##check if result was good
@@ -112,7 +111,7 @@ dns_miab_rm() {
 
 
   #Remove the challenge record
-  result="$(_miab_post $txtvalue $baseurl "" "DELETE" "" $MIAB_Username $MIAB_Password)"
+  result="$(_miab_post "$txtvalue" "$baseurl" "" "DELETE" "" "$MIAB_Username" "$MIAB_Password")"
 
   _debug result $result
 
