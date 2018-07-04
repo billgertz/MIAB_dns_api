@@ -7,6 +7,7 @@ https://github.com/Neilpang/acme.sh/wiki/DNS-alias-mode
 ## 1. Use Mail In A Box API to automatically issue cert
 
 First you need an Administrator account to use MIAB API and the name of your mail server.
+You'll also need the curl package to be installed. wget doesn't work at the moment.
 
 ```
 export $MIAB_Username="admin@yourbox.email"
