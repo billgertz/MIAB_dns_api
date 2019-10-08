@@ -1,13 +1,16 @@
-#!/bin/bash
+#!/usr/bin/env sh
 
-#Here is a sample custom api script.
-#This file name is "dns_miab.sh"
-#So, here must be a method   dns_miab_add()
-#Which will be called by acme.sh to add the txt record to your api system.
-#returns 0 means success, otherwise error.
+#Name: dns_miab.sh
 #
-#Author: Neilpang
-#Report Bugs here: https://github.com/Neilpang/acme.sh
+#Authors:
+# Darven Dissek 2018
+# William Gertz 2019
+#
+# Thanks to Neil Pang for the code reused from acme.sh from HTTP-01 validation
+# used to communicate with the MailintheBox Custom DNS API
+#Report Bugs here:A
+# https://github.com/billgertz/MIAB_dns_api (for dns_miab.sh)
+# https://github.com/Neilpang/acme.sh       (for acme.sh)
 #
 ########  Public functions #####################
 
@@ -18,17 +21,21 @@ dns_miab_add() {
   _info "Using miab"
   _debug fulldomain "$fulldomain"
   _debug txtvalue "$txtvalue"
-#  _err "Not implemented!"
-
 
   MIAB_Username="${MIAB_Username:-$(_readaccountconf_mutable MIAB_Username)}"
   MIAB_Password="${MIAB_Password:-$(_readaccountconf_mutable MIAB_Password)}"
   MIAB_Server="${MIAB_Server:-$(_readaccountconf_mutable MIAB_Server)}"
+
+  #debug log the environmental variables
+  _debug MIAB_Username "$MIAB_Username"
+  _debug MIAB_Password "$MIAB_Password"
+  _debug MIAB_Server "$MIAB_Server"
+
   if [ -z "$MIAB_Username" ] || [ -z "$MIAB_Password" ] || [ -z "$MIAB_Server" ]; then
     MIAB_Username=""
     MIAB_Password=""
     MIAB_Server=""
-    _err "You don't specify MIAB_Username or MIAB_Password or MIAB_Server yet."
+    _err "You didn't specify MIAB_Username or MIAB_Password or MIAB_Server."
     _err "Please try again."
     return 1
   fi
@@ -38,27 +45,14 @@ dns_miab_add() {
   _saveaccountconf_mutable MIAB_Password  "$MIAB_Password"
   _saveaccountconf_mutable MIAB_Server  "$MIAB_Server"
 
-#  _debug "First detect the root zone"
-#  if ! _get_root "$fulldomain"; then
-#    _err "invalid domain"
-#    return 1
-#  fi
-#  _debug _domain_id "$_domain_id"
-#  _debug _sub_domain "$_sub_domain"
-#  _debug _domain "$_domain"
-
-
-
   baseurl="https://$MIAB_Server/admin/dns/custom/$fulldomain/txt"
-
 
   #Add the challenge record
   result="$(_miab_post "$txtvalue" "$baseurl" "" "POST" "" "$MIAB_Username" "$MIAB_Password")"
 
   _debug result "$result"
 
-
-  ##check if result was good
+  #check if result was good
   if _contains "$result" "updated DNS"; then
     _info "Successfully created the txt record"
     return 0
@@ -82,11 +76,17 @@ dns_miab_rm() {
   MIAB_Username="${MIAB_Username:-$(_readaccountconf_mutable MIAB_Username)}"
   MIAB_Password="${MIAB_Password:-$(_readaccountconf_mutable MIAB_Password)}"
   MIAB_Server="${MIAB_Server:-$(_readaccountconf_mutable MIAB_Server)}"
+
+  #debug log the environmental variables
+  _debug MIAB_Username "$MIAB_Username"
+  _debug MIAB_Password "$MIAB_Password"
+  _debug MIAB_Server "$MIAB_Server"
+
   if [ -z "$MIAB_Username" ] || [ -z "$MIAB_Password" ] || [ -z "$MIAB_Server" ]; then
     MIAB_Username=""
     MIAB_Password=""
     MIAB_Server=""
-    _err "You don't specify MIAB_Username or MIAB_Password or MIAB_Server yet."
+    _err "You didn't specify MIAB_Username or MIAB_Password or MIAB_Server."
     _err "Please try again."
     return 1
   fi
@@ -96,27 +96,14 @@ dns_miab_rm() {
   _saveaccountconf_mutable MIAB_Password  "$MIAB_Password"
   _saveaccountconf_mutable MIAB_Server  "$MIAB_Server"
 
-#  _debug "First detect the root zone"
-#  if ! _get_root "$fulldomain"; then
-#    _err "invalid domain"
-#    return 1
-#  fi
-#  _debug _domain_id "$_domain_id"
-#  _debug _sub_domain "$_sub_domain"
-#  _debug _domain "$_domain"
-
-
-
   baseurl="https://$MIAB_Server/admin/dns/custom/$fulldomain/txt"
-
 
   #Remove the challenge record
   result="$(_miab_post "$txtvalue" "$baseurl" "" "DELETE" "" "$MIAB_Username" "$MIAB_Password")"
 
   _debug result $result
 
-
-  ##check if result was good
+  #check if result was good
   if _contains "$result" "updated DNS"; then
     _info "Successfully created the txt record"
     return 0
@@ -125,8 +112,6 @@ dns_miab_rm() {
     _err "$result"
     return 1
   fi
-
-
 }
 
 ####################  Private functions below ##################################
@@ -139,6 +124,7 @@ _get_root() {
   domain=$1
   i=2
   p=1
+ 
   while true; do
     h=$(printf "%s" "$domain" | cut -d . -f $i-100)
     _debug h "$h"
@@ -149,19 +135,24 @@ _get_root() {
 
     if _contains "$response" "\"name\":\"$h\"" >/dev/null; then
       _domain_id=$(printf "%s\n" "$response" | _egrep_o "\[.\"id\":\"[^\"]*\"" | head -n 1 | cut -d : -f 2 | tr -d \")
+
       if [ "$_domain_id" ]; then
         _sub_domain=$(printf "%s" "$domain" | cut -d . -f 1-$p)
         _domain=$h
         return 0
       fi
+
       return 1
     fi
+
     p=$i
     i=$(_math "$i" + 1)
   done
+
   return 1
 }
 
+# post changes to MIAB dns (taken from acme.sh)
 _miab_post() {
   body="$1"
   _post_url="$2"
@@ -174,6 +165,7 @@ _miab_post() {
   if [ -z "$httpmethod" ]; then
     httpmethod="POST"
   fi
+
   _debug $httpmethod
   _debug "_post_url" "$_post_url"
   _debug2 "body" "$body"
@@ -183,10 +175,13 @@ _miab_post() {
 
   if [ "$_ACME_CURL" ] && [ "${ACME_USE_WGET:-0}" = "0" ]; then
     _CURL="$_ACME_CURL"
+
     if [ "$HTTPS_INSECURE" ]; then
       _CURL="$_CURL --insecure  "
     fi
+
     _debug "_CURL" "$_CURL"
+ 
     if [ "$needbase64" ]; then
       if [ "$_postContentType" ]; then
         response="$($_CURL --user-agent "$USER_AGENT" -X $httpmethod --user "$username:$password" -H "Content-Type: $_postContentType" -H "$_H1" -H "$_H2" -H "$_H3" -H "$_H4" -H "$_H5" --data "$body" "$_post_url" | _base64)"
@@ -200,7 +195,9 @@ _miab_post() {
         response="$($_CURL --user-agent "$USER_AGENT" -X $httpmethod --user "$username:$password" -H "$_H1" -H "$_H2" -H "$_H3" -H "$_H4" -H "$_H5" --data "$body" "$_post_url")"
       fi
     fi
+
     _ret="$?"
+
     if [ "$_ret" != "0" ]; then
       _err "Please refer to https://curl.haxx.se/libcurl/c/libcurl-errors.html for error code: $_ret"
       if [ "$DEBUG" ] && [ "$DEBUG" -ge "2" ]; then
@@ -208,14 +205,19 @@ _miab_post() {
         _err "$(cat "$_CURL_DUMP")"
       fi
     fi
+
   elif [ "$_ACME_WGET" ]; then
     _WGET="$_ACME_WGET"
+
     if [ "$HTTPS_INSECURE" ]; then
       _WGET="$_WGET --no-check-certificate "
     fi
+
     _debug "_WGET" "$_WGET"
+
     if [ "$needbase64" ]; then
-      if [ "$httpmethod" = "POST" ]; then
+
+      	    if [ "$httpmethod" = "POST" ]; then
         if [ "$_postContentType" ]; then
           response="$($_WGET -S -O - --user-agent="$USER_AGENT" --header "$_H5" --header "$_H4" --header "$_H3" --header "$_H2" --header "$_H1" --header "Content-Type: $_postContentType" --post-data="$body" "$_post_url" 2>"$HTTP_HEADER" | _base64)"
         else
@@ -228,7 +230,9 @@ _miab_post() {
           response="$($_WGET -S -O - --user-agent="$USER_AGENT" --header "$_H5" --header "$_H4" --header "$_H3" --header "$_H2" --header "$_H1" --method $httpmethod --body-data="$body" "$_post_url" 2>"$HTTP_HEADER" | _base64)"
         fi
       fi
+
     else
+
       if [ "$httpmethod" = "POST" ]; then
         if [ "$_postContentType" ]; then
           response="$($_WGET -S -O - --user-agent="$USER_AGENT" --header "$_H5" --header "$_H4" --header "$_H3" --header "$_H2" --header "$_H1" --header "Content-Type: $_postContentType" --post-data="$body" "$_post_url" 2>"$HTTP_HEADER")"
@@ -242,20 +246,27 @@ _miab_post() {
           response="$($_WGET -S -O - --user-agent="$USER_AGENT" --header "$_H5" --header "$_H4" --header "$_H3" --header "$_H2" --header "$_H1" --method $httpmethod --body-data="$body" "$_post_url" 2>"$HTTP_HEADER")"
         fi
       fi
+
     fi
+
     _ret="$?"
+
     if [ "$_ret" = "8" ]; then
       _ret=0
       _debug "wget returns 8, the server returns a 'Bad request' response, lets process the response later."
     fi
+
     if [ "$_ret" != "0" ]; then
       _err "Please refer to https://www.gnu.org/software/wget/manual/html_node/Exit-Status.html for error code: $_ret"
     fi
+
     _sed_i "s/^ *//g" "$HTTP_HEADER"
+
   else
     _ret="$?"
-    _err "Neither curl nor wget is found, can not do $httpmethod."
+    _err "Neither curl nor wget was found, cannot do $httpmethod."
   fi
+
   _debug "_ret" "$_ret"
   printf "%s" "$response"
   return $_ret
