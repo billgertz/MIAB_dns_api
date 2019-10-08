@@ -98,7 +98,7 @@ dns_miab_rm() {
   baseurl="https://$MIAB_Server/admin/dns/custom/$fulldomain/txt"
 
   #Remove the challenge record
-  result="$(_miab_post "$txtvalue" "$baseurl" "" "DELETE" "" "$MIAB_Username" "$MIAB_Password")"
+  result="$(_miab_post "$txtvalue" "$baseurl" "DELETE" "$MIAB_Username" "$MIAB_Password")"
 
   _debug result "$result"
 
@@ -119,11 +119,9 @@ dns_miab_rm() {
 _miab_post() {
   body="$1"
   _post_url="$2"
-  needbase64="$3"
-  httpmethod="$4"
-  _postContentType="$5"
-  username="$6"
-  password="$7"
+  httpmethod="$3"
+  username="$4"
+  password="$5"
 
   if [ -z "$httpmethod" ]; then
     httpmethod="POST"
@@ -145,19 +143,7 @@ _miab_post() {
 
     _debug "_CURL" "$_CURL"
 
-    if [ "$needbase64" ]; then
-      if [ "$_postContentType" ]; then
-        response="$($_CURL --user-agent "$USER_AGENT" -X $httpmethod --user "$username:$password" -H "Content-Type: $_postContentType" -H "$_H1" -H "$_H2" -H "$_H3" -H "$_H4" -H "$_H5" --data "$body" "$_post_url" | _base64)"
-      else
-        response="$($_CURL --user-agent "$USER_AGENT" -X $httpmethod --user "$username:$password" -H "$_H1" -H "$_H2" -H "$_H3" -H "$_H4" -H "$_H5" --data "$body" "$_post_url" | _base64)"
-      fi
-    else
-      if [ "$_postContentType" ]; then
-        response="$($_CURL --user-agent "$USER_AGENT" -X $httpmethod --user "$username:$password" -H "Content-Type: $_postContentType" -H "$_H1" -H "$_H2" -H "$_H3" -H "$_H4" -H "$_H5" --data "$body" "$_post_url")"
-      else
-        response="$($_CURL --user-agent "$USER_AGENT" -X $httpmethod --user "$username:$password" -H "$_H1" -H "$_H2" -H "$_H3" -H "$_H4" -H "$_H5" --data "$body" "$_post_url")"
-      fi
-    fi
+    response="$($_CURL --user-agent "$USER_AGENT" -X $httpmethod --user "$username:$password" -H "$_H1" -H "$_H2" -H "$_H3" -H "$_H4" -H "$_H5" --data "$body" "$_post_url")"
 
     _ret="$?"
 
@@ -178,36 +164,10 @@ _miab_post() {
 
     _debug "_WGET" "$_WGET"
 
-    if [ "$needbase64" ]; then
-
-      	    if [ "$httpmethod" = "POST" ]; then
-        if [ "$_postContentType" ]; then
-          response="$($_WGET -S -O - --user-agent="$USER_AGENT" --header "$_H5" --header "$_H4" --header "$_H3" --header "$_H2" --header "$_H1" --header "Content-Type: $_postContentType" --post-data="$body" "$_post_url" 2>"$HTTP_HEADER" | _base64)"
-        else
-          response="$($_WGET -S -O - --user-agent="$USER_AGENT" --header "$_H5" --header "$_H4" --header "$_H3" --header "$_H2" --header "$_H1" --post-data="$body" "$_post_url" 2>"$HTTP_HEADER" | _base64)"
-        fi
-      else
-        if [ "$_postContentType" ]; then
-          response="$($_WGET -S -O - --user-agent="$USER_AGENT" --header "$_H5" --header "$_H4" --header "$_H3" --header "$_H2" --header "$_H1" --header "Content-Type: $_postContentType" --method $httpmethod --body-data="$body" "$_post_url" 2>"$HTTP_HEADER" | _base64)"
-        else
-          response="$($_WGET -S -O - --user-agent="$USER_AGENT" --header "$_H5" --header "$_H4" --header "$_H3" --header "$_H2" --header "$_H1" --method $httpmethod --body-data="$body" "$_post_url" 2>"$HTTP_HEADER" | _base64)"
-        fi
-      fi
-
-    else
-
       if [ "$httpmethod" = "POST" ]; then
-        if [ "$_postContentType" ]; then
-          response="$($_WGET -S -O - --user-agent="$USER_AGENT" --header "$_H5" --header "$_H4" --header "$_H3" --header "$_H2" --header "$_H1" --header "Content-Type: $_postContentType" --post-data="$body" "$_post_url" 2>"$HTTP_HEADER")"
-        else
-          response="$($_WGET -S -O - --user-agent="$USER_AGENT" --header "$_H5" --header "$_H4" --header "$_H3" --header "$_H2" --header "$_H1" --post-data="$body" "$_post_url" 2>"$HTTP_HEADER")"
-        fi
+        response="$($_WGET -S -O - --user-agent="$USER_AGENT" --header "$_H5" --header "$_H4" --header "$_H3" --header "$_H2" --header "$_H1" --post-data="$body" "$_post_url" 2>"$HTTP_HEADER")"
       else
-        if [ "$_postContentType" ]; then
-          response="$($_WGET -S -O - --user-agent="$USER_AGENT" --header "$_H5" --header "$_H4" --header "$_H3" --header "$_H2" --header "$_H1" --header "Content-Type: $_postContentType" --method $httpmethod --body-data="$body" "$_post_url" 2>"$HTTP_HEADER")"
-        else
-          response="$($_WGET -S -O - --user-agent="$USER_AGENT" --header "$_H5" --header "$_H4" --header "$_H3" --header "$_H2" --header "$_H1" --method $httpmethod --body-data="$body" "$_post_url" 2>"$HTTP_HEADER")"
-        fi
+        response="$($_WGET -S -O - --user-agent="$USER_AGENT" --header "$_H5" --header "$_H4" --header "$_H3" --header "$_H2" --header "$_H1" --method $httpmethod --body-data="$body" "$_post_url" 2>"$HTTP_HEADER")"
       fi
 
     fi
