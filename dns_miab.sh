@@ -61,7 +61,6 @@ dns_miab_add() {
     _err "$result"
     return 1
   fi
-
 }
 
 #Usage: fulldomain txtvalue
