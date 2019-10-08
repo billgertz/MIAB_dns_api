@@ -8,7 +8,7 @@
 #
 # Thanks to Neil Pang for the code reused from acme.sh from HTTP-01 validation
 # used to communicate with the MailintheBox Custom DNS API
-#Report Bugs here:A
+#Report Bugs here:
 # https://github.com/billgertz/MIAB_dns_api (for dns_miab.sh)
 # https://github.com/Neilpang/acme.sh       (for acme.sh)
 #
