@@ -142,9 +142,7 @@ _miab_post() {
     fi
 
     _debug "_CURL" "$_CURL"
-
     response="$($_CURL --user-agent "$USER_AGENT" -X $httpmethod --user "$username:$password" -H "$_H1" -H "$_H2" -H "$_H3" -H "$_H4" -H "$_H5" --data "$body" "$_post_url")"
-
     _ret="$?"
 
     if [ "$_ret" != "0" ]; then
