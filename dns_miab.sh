@@ -48,7 +48,7 @@ dns_miab_add() {
   baseurl="https://$MIAB_Server/admin/dns/custom/$fulldomain/txt"
 
   #Add the challenge record
-  result="$(_miab_post "$txtvalue" "$baseurl" "" "POST" "" "$MIAB_Username" "$MIAB_Password")"
+  result="$(_miab_post "$txtvalue" "$baseurl" "POST" "$MIAB_Username" "$MIAB_Password")"
 
   _debug result "$result"
 
