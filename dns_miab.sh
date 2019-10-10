@@ -6,7 +6,7 @@
 #    Darven Dissek 2018
 #    William Gertz 2019
 #
-#     Thanks to Neil Pang for the code reused from acme.sh from HTTP-01 validation
+#     Thanks to Neil Pang fnd other developers here for code reused from acme.sh from DNS-01
 #     used to communicate with the MailinaBox Custom DNS API
 # Report Bugs here:
 #    https://github.com/billgertz/MIAB_dns_api (for dns_miab.sh)
@@ -14,7 +14,7 @@
 #
 ########  Public functions #####################
 
-#Usage: dns_miab_add   _acme-challenge.www.domain.com   "XKrxpRBosdIKFzxW_CT3KLZNf6q0HG9i01zxXp5CPBs"
+#Usage: dns_miab_add  _acme-challenge.www.domain.com  "XKrxpRBosdIKFzxW_CT3KLZNf6q0HG9i01zxXp5CPBs"
 dns_miab_add() {
   fulldomain=$1
   txtvalue=$2
@@ -47,8 +47,7 @@ dns_miab_add() {
   fi
 }
 
-#Usage: fulldomain txtvalue
-#Remove the txt record after validation.
+#Usage: dns_miab_rm  _acme-challenge.www.domain.com   "XKrxpRBosdIKFzxW_CT3KLZNf6q0HG9i01zxXp5CPBs"
 dns_miab_rm() {
   fulldomain=$1
   txtvalue=$2
@@ -84,8 +83,8 @@ dns_miab_rm() {
 
 ####################  Private functions below ##################################
 #
-#_acme-challenge.www.domain.com
-#returns
+#Usage: _get_root  _acme-challenge.www.domain.com
+#Returns:
 # _sub_domain=_acme-challenge.www
 # _domain=domain.com
 _get_root() {
@@ -130,8 +129,13 @@ _get_root() {
   return 1
 }
 
+#Usage: _retrieve_miab_env
+#Returns (from store or environment variables):
+# MIAB_Username
+# MIAB_Password
+# MIAB_Server
 #retrieve MIAB environment variables, report errors and quit if problems
-retrieve_miab_env() {
+_retrieve_miab_env() {
   MIAB_Username="${MIAB_Username:-$(_readaccountconf_mutable MIAB_Username)}"
   MIAB_Password="${MIAB_Password:-$(_readaccountconf_mutable MIAB_Password)}"
   MIAB_Server="${MIAB_Server:-$(_readaccountconf_mutable MIAB_Server)}"
@@ -154,6 +158,7 @@ retrieve_miab_env() {
   _saveaccountconf_mutable MIAB_Server "$MIAB_Server"
 }
 
+#Useage: _miab_rest  "XKrxpRBosdIKFzxW_CT3KLZNf6q0HG9i01zxXp5CPBs"  "custom/_acme-challenge.www.domain.com/txt  "PUT"
 #rest interface MIAB dns
 _miab_rest() {
   _data="$1"
