@@ -33,7 +33,7 @@ dns_miab_add() {
 
   #add the challenge record
   _api_path="custom/${fulldomain}/txt"
-  response="$(_miab_rest "txtvalue" "$api_path" "PUT")"
+  response="$(_miab_rest "txtvalue" "$api_path" "POST")"
   _debug response "$response"
 
   #check if result was good
