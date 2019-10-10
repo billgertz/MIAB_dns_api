@@ -31,9 +31,12 @@ dns_miab_add() {
     return 1
   fi
 
+  _debug2 _sub_domain "$_sub_domain"
+  _debug2 _domain "$_domain"
+
   #add the challenge record
   _api_path="custom/${fulldomain}/txt"
-  response="$(_miab_rest "txtvalue" "$api_path" "POST")"
+  response="$(_miab_rest "txtvalue" "$_api_path" "POST")"
   _debug response "$response"
 
   #check if result was good
@@ -64,6 +67,9 @@ dns_miab_rm() {
     _err "Cannot find any part of ${fulldomain} is hosted on ${MIAB_Server}"
     return 1
   fi
+
+  _debug2 _sub_domain "$_sub_domain"
+  _debug2 _domain "$_domain"
 
   #Remove the challenge record
   _api_path="custom/${fulldomain}/txt"
@@ -106,7 +112,7 @@ _get_root() {
   #cycle through the passed domain seperating out a test domain discarding
   #   the subdomain by marching thorugh the dots
   while true; do
-    $_test_domain=$(printf "%s" "$_passed_domain" | cut -d . -f ${_i}-100)
+    _test_domain=$(printf "%s" "$_passed_domain" | cut -d . -f ${_i}-100)
     _debug _test_domain "$_test_domain"
 
     if [ -z "$_test_domain" ]; then
@@ -182,5 +188,5 @@ _miab_rest() {
   fi
 
   _debug response "$response"
-  return $response
+  return "$response"
 }
