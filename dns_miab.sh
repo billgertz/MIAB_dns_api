@@ -18,7 +18,7 @@
 dns_miab_add() {
   fulldomain=$1
   txtvalue=$2
-  _info "Using miab"
+  _info "Using miab challange add"
   _debug fulldomain "$fulldomain"
   _debug txtvalue "$txtvalue"
 
@@ -53,7 +53,7 @@ dns_miab_rm() {
   fulldomain=$1
   txtvalue=$2
 
-  _info "Using miab"
+  _info "Using miab challage delete"
   _debug fulldomain "$fulldomain"
   _debug txtvalue "$txtvalue"
 
@@ -68,7 +68,7 @@ dns_miab_rm() {
 
   #Remove the challenge record
   _api_path="custom/{$fulldomain}/txt"
-  response="$(_miab_post "$txtvalue" "$_api_path" "DELETE")"
+  response="$(_miab_rest "$txtvalue" "$_api_path" "DELETE")"
   _debug response "$response"
 
   #check if result was good
@@ -90,6 +90,7 @@ dns_miab_rm() {
 # _domain=domain.com
 _get_root() {
   _passed_domain=$1
+  _debug _passed_domain "$_passed_domain"
   _i=2
   _p=1
 
@@ -103,7 +104,7 @@ _get_root() {
     return 1
   fi
 
-  #cycle through the passed domain seperating out a test domaini discarding
+  #cycle through the passed domain seperating out a test domain discarding
   #   the subdomain by marching thorugh the dots
   while true; do
     $_test_domain=$(printf "%s" "$_pased_domain" | cut -d . -f ${i}-100)
@@ -164,17 +165,17 @@ _miab_rest() {
   _password="$(printf "%s" "$MIAB_Password" | _url_encode)"
   _url="https://${_username}:${_password}@${MIAB_Server}/admin/dns/${_api_path}"
 
-  _debug2 "_data" "$_data"
-  _debug "_api_path" "$_api_path"
-  _debug2 "_url" "$_url"
-  _debug "_httpmethod" "$_httpmethod"
+  _debug2 _data "$_data"
+  _debug _api_path "$_api_path"
+  _debug2 _url "$_url"
+  _debug _httpmethod "$_httpmethod"
 
-  if [ "_httpmethod" = "GET" ]; then
+  if [ "$_httpmethod" = "GET" ]; then
     response="$(_get "$_url")"
   else
     response="$(_post "$_data" "$_url" "" "$_httpmethod")"
   fi
 
-  _debug "response" "$response"
+  _debug response "$response"
   return $response
 }
