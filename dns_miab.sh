@@ -32,7 +32,7 @@ dns_miab_add() {
   fi
 
   #add the challenge record
-  _api_path="custon/{$fulldomain}/txt"
+  _api_path="custom/{$fulldomain}/txt"
   response="$(_miab_rest "txtvalue" "$api_path" "PUT")"
   _debug response "$response"
 
@@ -67,7 +67,7 @@ dns_miab_rm() {
   fi
 
   #Remove the challenge record
-  _api_path="custon/{$fulldomain}/txt"
+  _api_path="custom/{$fulldomain}/txt"
   response="$(_miab_post "$txtvalue" "$_api_path" "DELETE")"
   _debug response "$response"
 
