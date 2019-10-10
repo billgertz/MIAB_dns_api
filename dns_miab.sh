@@ -34,7 +34,6 @@ dns_miab_add() {
   #add the challenge record
   _api_path="custon/{$fulldomain}/txt"
   response="$(_miab_rest "txtvalue" "$api_path" "PUT")"
-
   _debug response "$response"
 
   #check if result was good
@@ -70,7 +69,6 @@ dns_miab_rm() {
   #Remove the challenge record
   _api_path="custon/{$fulldomain}/txt"
   response="$(_miab_post "$txtvalue" "$_api_path" "DELETE")"
-
   _debug response "$response"
 
   #check if result was good
@@ -97,6 +95,7 @@ _get_root() {
 
   #get the zones hosed on MIAB server, must be a json stream
   response="$(_miab_rest "" "zones" "GET")"
+  _debug response "$response"
 
   if ! _startswith "$response" "[" || ! _endswith "$response" "]"; then
     _err "ERROR fetching domain list"
@@ -109,6 +108,7 @@ _get_root() {
   while true; do
     $_test_domain=$(printf "%s" "$_pased_domain" | cut -d . -f ${i}-100)
     _debug _test_domain "$_test_domain"
+
     if [ -z "$_test_domain" ]; then
       return 1
     fi
@@ -162,7 +162,6 @@ _miab_rest() {
   #encode username and password for url
   _username="$(printf "%s" "$MIAB_Username" | _url_encode)"
   _password="$(printf "%s" "$MIAB_Password" | _url_encode)"
-
   _url="https://${_username}:${_password}@${MIAB_Server}/admin/dns/${_api_path}"
 
   _debug2 "_data" "$_data"
