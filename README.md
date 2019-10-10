@@ -1,13 +1,12 @@
-# How to use DNS API
+# How to use DNSAPI
 
-If your dns provider doesn't provide api access, you can use our dns alias mode: 
+Since MailinaBox isn't yet integrated to acme.sh, you can use dns alias mode until our pull request is accpeted: 
 
 https://github.com/Neilpang/acme.sh/wiki/DNS-alias-mode
 
-## 1. Use Mail In A Box API to automatically issue cert
+## Use MailinaBox Custom DNS API to automatically issue cert
 
 First you need an Administrator account to use MIAB API and the name of your mail server.
-You'll also need the curl package to be installed. wget doesn't work at the moment.
 
 ```
 export $MIAB_Username="admin@yourbox.email"
