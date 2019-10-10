@@ -107,7 +107,7 @@ _get_root() {
   #cycle through the passed domain seperating out a test domain discarding
   #   the subdomain by marching thorugh the dots
   while true; do
-    $_test_domain=$(printf "%s" "$_pased_domain" | cut -d . -f ${i}-100)
+    $_test_domain=$(printf "%s" "$_passed_domain" | cut -d . -f ${i}-100)
     _debug _test_domain "$_test_domain"
 
     if [ -z "$_test_domain" ]; then
