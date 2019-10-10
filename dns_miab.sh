@@ -174,7 +174,7 @@ _miab_rest() {
   if [ "_httpmethod" = "GET" ]; then
     response="$(_get "$_url")"
   else
-    response="$(_post ""$_data" "$_url" "" "$_httpmethod")"
+    response="$(_post "$_data" "$_url" "" "$_httpmethod")"
   fi
 
   _debug "response" "$response"
