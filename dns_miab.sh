@@ -37,7 +37,7 @@ dns_miab_add() {
   _debug response "$response"
 
   #check if result was good
-  if _contains "$rresponse" "updated DNS"; then
+  if _contains "$response" "updated DNS"; then
     _info "Successfully created the txt record"
     return 0
   else
