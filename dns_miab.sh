@@ -165,6 +165,7 @@ _retrieve_miab_env() {
 }
 
 #Useage: _miab_rest  "XKrxpRBosdIKFzxW_CT3KLZNf6q0HG9i01zxXp5CPBs"  "custom/_acme-challenge.www.domain.com/txt  "PUT"
+#Returns: "updated DNS: domain.com"
 #rest interface MIAB dns
 _miab_rest() {
   _data="$1"
