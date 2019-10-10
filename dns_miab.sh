@@ -22,43 +22,28 @@ dns_miab_add() {
   _debug fulldomain "$fulldomain"
   _debug txtvalue "$txtvalue"
 
-  MIAB_Username="${MIAB_Username:-$(_readaccountconf_mutable MIAB_Username)}"
-  MIAB_Password="${MIAB_Password:-$(_readaccountconf_mutable MIAB_Password)}"
-  MIAB_Server="${MIAB_Server:-$(_readaccountconf_mutable MIAB_Server)}"
-
-  #debug log the environmental variables
-  _debug MIAB_Username "$MIAB_Username"
-  _debug MIAB_Password "$MIAB_Password"
-  _debug MIAB_Server "$MIAB_Server"
-
-  if [ -z "$MIAB_Username" ] || [ -z "$MIAB_Password" ] || [ -z "$MIAB_Server" ]; then
-    MIAB_Username=""
-    MIAB_Password=""
-    MIAB_Server=""
-    _err "You didn't specify MIAB_Username or MIAB_Password or MIAB_Server."
-    _err "Please try again."
+  #retrieve MIAB environemt vars
+  _retrieve_miab_env
+  
+  #check domain and seperate into doamin and host
+  if ! _get_root "$fulldomain"; then
+    _err "Cannot find any part of ${fulldomain} is hosted on ${MIAB_Server}"
     return 1
   fi
 
-  #save the credentials to the account conf file.
-  _saveaccountconf_mutable MIAB_Username "$MIAB_Username"
-  _saveaccountconf_mutable MIAB_Password "$MIAB_Password"
-  _saveaccountconf_mutable MIAB_Server "$MIAB_Server"
+  #add the challenge record
+  _api_path="custon/{$fulldomain}/txt"
+  response="$(_miab_rest "txtvalue" "$api_path" "PUT")"
 
-  baseurl="https://$MIAB_Server/admin/dns/custom/$fulldomain/txt"
-
-  #Add the challenge record
-  result="$(_miab_post "$txtvalue" "$baseurl" "POST" "$MIAB_Username" "$MIAB_Password")"
-
-  _debug result "$result"
+  _debug response "$response"
 
   #check if result was good
-  if _contains "$result" "updated DNS"; then
+  if _contains "$rresponse" "updated DNS"; then
     _info "Successfully created the txt record"
     return 0
   else
-    _err "Error encountered during record addition"
-    _err "$result"
+    _err "Error encountered during record add"
+    _err "$response"
     return 1
   fi
 }
@@ -68,10 +53,85 @@ dns_miab_add() {
 dns_miab_rm() {
   fulldomain=$1
   txtvalue=$2
+
   _info "Using miab"
   _debug fulldomain "$fulldomain"
   _debug txtvalue "$txtvalue"
 
+  #retrieve MIAB environemt vars
+  _retrieve_miab_env
+
+  #check domain and seperate into doamin and host
+  if ! _get_root "$fulldomain"; then
+    _err "Domain ${fulldomain} does not exist."
+    return 1
+  fi
+
+  #Remove the challenge record
+  _api_path="custon/{$fulldomain}/txt"
+  response="$(_miab_post "$txtvalue" "$_api_path" "DELETE")"
+
+  _debug response "$response"
+
+  #check if result was good
+  if _contains "$response" "updated DNS"; then
+    _info "Successfully removed the txt record"
+    return 0
+  else
+    _err "Error encountered during record remove"
+    _err "$response"
+    return 1
+  fi
+}
+
+####################  Private functions below ##################################
+#
+#_acme-challenge.www.domain.com
+#returns
+# _sub_domain=_acme-challenge.www
+# _domain=domain.com
+_get_root() {
+  _passed_domain=$1
+  _i=2
+  _p=1
+
+  #get the zones hosed on MIAB server, must be a json stream
+  if _miab_rest "" "zones" GET; then
+
+    if ! _startswith "$response" "[" || ! _endswith "$response" "]"; then
+      _err "ERROR fetching domain list"
+      _err "$response"
+      return 1
+    fi
+
+    #cycle through the passed domain seperating out a test domaini discarding
+    #   the subdomain by marching thorugh the dots
+    while true; do
+      $_test_domain=$(printf "%s" "$_pased_domain" | cut -d . -f ${i}-100)
+      _debug _test_domain "$_test_domain"
+      if [ -z "$_test_domain" ]; then
+        return 1
+      fi
+
+      #ireport found if the test domain is in the json response and
+      #   report the subdomain
+      if _contains "$response" "\"$_test_domain\""; then
+        _sub_domain=$(printf "%s" "$_pased_domain" | cut -d . -f 1-${p})
+        _domain=${_test_domain}
+        return 0
+      fi
+
+      #cycle to the next dot in the passed domain
+      _p=${_i}
+      _i=$(_math "$_i" + 1)
+    done
+  fi
+
+  return 1
+}
+
+#retrieve MIAB environment variables, report errors and quit if problems
+retrieve_miab_env() {
   MIAB_Username="${MIAB_Username:-$(_readaccountconf_mutable MIAB_Username)}"
   MIAB_Password="${MIAB_Password:-$(_readaccountconf_mutable MIAB_Password)}"
   MIAB_Server="${MIAB_Server:-$(_readaccountconf_mutable MIAB_Server)}"
@@ -81,12 +141,10 @@ dns_miab_rm() {
   _debug MIAB_Password "$MIAB_Password"
   _debug MIAB_Server "$MIAB_Server"
 
+  #check if MIAB environemt vars set and quit if not
   if [ -z "$MIAB_Username" ] || [ -z "$MIAB_Password" ] || [ -z "$MIAB_Server" ]; then
-    MIAB_Username=""
-    MIAB_Password=""
-    MIAB_Server=""
-    _err "You didn't specify MIAB_Username or MIAB_Password or MIAB_Server."
-    _err "Please try again."
+    _err "You didn't specify one or more of MIAB_Username, MIAB_Password or MIAB_Server."
+    _err "Please check these environment variables and try again."
     return 1
   fi
 
@@ -94,98 +152,31 @@ dns_miab_rm() {
   _saveaccountconf_mutable MIAB_Username "$MIAB_Username"
   _saveaccountconf_mutable MIAB_Password "$MIAB_Password"
   _saveaccountconf_mutable MIAB_Server "$MIAB_Server"
-
-  baseurl="https://$MIAB_Server/admin/dns/custom/$fulldomain/txt"
-
-  #Remove the challenge record
-  result="$(_miab_post "$txtvalue" "$baseurl" "DELETE" "$MIAB_Username" "$MIAB_Password")"
-
-  _debug result "$result"
-
-  #check if result was good
-  if _contains "$result" "updated DNS"; then
-    _info "Successfully created the txt record"
-    return 0
-  else
-    _err "Error encountered during record addition"
-    _err "$result"
-    return 1
-  fi
 }
 
-####################  Private functions below ##################################
-#
-# post changes to MIAB dns (taken from acme.sh)
-_miab_post() {
-  body="$1"
-  _post_url="$2"
-  httpmethod="$3"
-  username="$4"
-  password="$5"
+#rest interface MIAB dns
+_miab_rest() {
+  _data="$1"
+  _api_path="$2"
+  _httpmethod="$3"
 
-  if [ -z "$httpmethod" ]; then
-    httpmethod="POST"
-  fi
+  #encode username and password for url
+  _username="$(printf "%s" "$MIAB_Username" | _url_encode)"
+  _password="$(printf "%s" "$MIAB_Password" | _url_encode)"
 
-  _debug $httpmethod
-  _debug "_post_url" "$_post_url"
-  _debug2 "body" "$body"
+  _url="https://${_username}:${_password}@${MIAB_Server}/admin/dns/${_api_path}"
 
-  _inithttp
+  _debug2 "_data" "$_data"
+  _debug "_api_path" "$_api_path"
+  _debug2 "_url" "$_url"
+  _debug "_httpmetho" "$_httpmethod"
 
-  if [ "$_ACME_CURL" ] && [ "${ACME_USE_WGET:-0}" = "0" ]; then
-    _CURL="$_ACME_CURL"
-
-    if [ "$HTTPS_INSECURE" ]; then
-      _CURL="$_CURL --insecure  "
-    fi
-
-    _debug "_CURL" "$_CURL"
-    response="$($_CURL --user-agent "$USER_AGENT" -X $httpmethod --user "$username:$password" -H "$_H1" -H "$_H2" -H "$_H3" -H "$_H4" -H "$_H5" --data "$body" "$_post_url")"
-    _ret="$?"
-
-    if [ "$_ret" != "0" ]; then
-      _err "Please refer to https://curl.haxx.se/libcurl/c/libcurl-errors.html for error code: $_ret"
-      if [ "$DEBUG" ] && [ "$DEBUG" -ge "2" ]; then
-        _err "Here is the curl dump log:"
-        _err "$(cat "$_CURL_DUMP")"
-      fi
-    fi
-
-  elif [ "$_ACME_WGET" ]; then
-    _WGET="$_ACME_WGET"
-
-    if [ "$HTTPS_INSECURE" ]; then
-      _WGET="$_WGET --no-check-certificate "
-    fi
-
-    _debug "_WGET" "$_WGET"
-
-    if [ "$httpmethod" = "POST" ]; then
-      response="$($_WGET -S -O - --user-agent="$USER_AGENT" --header "$_H5" --header "$_H4" --header "$_H3" --header "$_H2" --header "$_H1" --post-data="$body" "$_post_url" 2>"$HTTP_HEADER")"
-    else
-      response="$($_WGET -S -O - --user-agent="$USER_AGENT" --header "$_H5" --header "$_H4" --header "$_H3" --header "$_H2" --header "$_H1" --method $httpmethod --body-data="$body" "$_post_url" 2>"$HTTP_HEADER")"
-    fi
-
-    _ret="$?"
-
-    if [ "$_ret" = "8" ]; then
-      _ret=0
-      _debug "wget returns 8, the server returns a 'Bad request' response, lets process the response later."
-    fi
-
-    if [ "$_ret" != "0" ]; then
-      _err "Please refer to https://www.gnu.org/software/wget/manual/html_node/Exit-Status.html for error code: $_ret"
-    fi
-
-    _sed_i "s/^ *//g" "$HTTP_HEADER"
-
+  if [ "_httpmethod" = "GET" ]; then
+    response="$(_get "$_url")"
   else
-    _ret="$?"
-    _err "Neither curl nor wget was found, cannot do $httpmethod."
+    response="$(_post ""$_data" "$_url" "" "$_httpmethod")"
   fi
 
-  _debug "_ret" "$_ret"
-  printf "%s" "$response"
-  return $_ret
+  _debug "response" "$response"
+  return $response
 }
