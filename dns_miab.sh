@@ -6,7 +6,7 @@
 #    Darven Dissek 2018
 #    William Gertz 2019
 #
-#     Thanks to Neil Pang fnd other developers here for code reused from acme.sh from DNS-01
+#     Thanks to Neil Pang and other developers here for code reused from acme.sh from DNS-01
 #     used to communicate with the MailinaBox Custom DNS API
 # Report Bugs here:
 #    https://github.com/billgertz/MIAB_dns_api (for dns_miab.sh)
@@ -164,7 +164,7 @@ _retrieve_miab_env() {
   _saveaccountconf_mutable MIAB_Server "$MIAB_Server"
 }
 
-#Useage: _miab_rest  "XKrxpRBosdIKFzxW_CT3KLZNf6q0HG9i01zxXp5CPBs"  "custom/_acme-challenge.www.domain.com/txt  "PUT"
+#Useage: _miab_rest  "XKrxpRBosdIKFzxW_CT3KLZNf6q0HG9i01zxXp5CPBs"  "custom/_acme-challenge.www.domain.com/txt  "POST"
 #Returns: "updated DNS: domain.com"
 #rest interface MIAB dns
 _miab_rest() {
