@@ -63,7 +63,7 @@ dns_miab_rm() {
 
   #check domain and seperate into doamin and host
   if ! _get_root "$fulldomain"; then
-    _err "Domain ${fulldomain} does not exist."
+    _err "Cannot find any part of ${fulldomain} is hosted on ${MIAB_Server}"
     return 1
   fi
 
@@ -96,36 +96,35 @@ _get_root() {
   _p=1
 
   #get the zones hosed on MIAB server, must be a json stream
-  if _miab_rest "" "zones" GET; then
+  response="$(_miab_rest "" "zones" "GET")"
 
-    if ! _startswith "$response" "[" || ! _endswith "$response" "]"; then
-      _err "ERROR fetching domain list"
-      _err "$response"
+  if ! _startswith "$response" "[" || ! _endswith "$response" "]"; then
+    _err "ERROR fetching domain list"
+    _err "$response"
+    return 1
+  fi
+
+  #cycle through the passed domain seperating out a test domaini discarding
+  #   the subdomain by marching thorugh the dots
+  while true; do
+    $_test_domain=$(printf "%s" "$_pased_domain" | cut -d . -f ${i}-100)
+    _debug _test_domain "$_test_domain"
+    if [ -z "$_test_domain" ]; then
       return 1
     fi
 
-    #cycle through the passed domain seperating out a test domaini discarding
-    #   the subdomain by marching thorugh the dots
-    while true; do
-      $_test_domain=$(printf "%s" "$_pased_domain" | cut -d . -f ${i}-100)
-      _debug _test_domain "$_test_domain"
-      if [ -z "$_test_domain" ]; then
-        return 1
-      fi
+    #report found if the test domain is in the json response and
+    #   report the subdomain
+    if _contains "$response" "\"$_test_domain\""; then
+      _sub_domain=$(printf "%s" "$_pased_domain" | cut -d . -f 1-${p})
+      _domain=${_test_domain}
+      return 0
+    fi
 
-      #ireport found if the test domain is in the json response and
-      #   report the subdomain
-      if _contains "$response" "\"$_test_domain\""; then
-        _sub_domain=$(printf "%s" "$_pased_domain" | cut -d . -f 1-${p})
-        _domain=${_test_domain}
-        return 0
-      fi
-
-      #cycle to the next dot in the passed domain
-      _p=${_i}
-      _i=$(_math "$_i" + 1)
-    done
-  fi
+    #cycle to the next dot in the passed domain
+    _p=${_i}
+    _i=$(_math "$_i" + 1)
+  done
 
   return 1
 }
@@ -169,7 +168,7 @@ _miab_rest() {
   _debug2 "_data" "$_data"
   _debug "_api_path" "$_api_path"
   _debug2 "_url" "$_url"
-  _debug "_httpmetho" "$_httpmethod"
+  _debug "_httpmethod" "$_httpmethod"
 
   if [ "_httpmethod" = "GET" ]; then
     response="$(_get "$_url")"
