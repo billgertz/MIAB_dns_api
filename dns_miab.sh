@@ -23,7 +23,9 @@ dns_miab_add() {
   _debug txtvalue "$txtvalue"
 
   #retrieve MIAB environemt vars
-  _retrieve_miab_env
+   if ! _retrieve_miab_env; then
+     return 1
+   fi
   
   #check domain and seperate into doamin and host
   if ! _get_root "$fulldomain"; then
@@ -36,8 +38,7 @@ dns_miab_add() {
 
   #add the challenge record
   _api_path="custom/${fulldomain}/txt"
-  response="$(_miab_rest "txtvalue" "$_api_path" "POST")"
-  _debug response "$response"
+  _miab_rest "$txtvalue" "$_api_path" "POST"
 
   #check if result was good
   if _contains "$response" "updated DNS"; then
@@ -60,7 +61,9 @@ dns_miab_rm() {
   _debug txtvalue "$txtvalue"
 
   #retrieve MIAB environemt vars
-  _retrieve_miab_env
+   if ! _retrieve_miab_env; then
+     return 1
+   fi
 
   #check domain and seperate into doamin and host
   if ! _get_root "$fulldomain"; then
@@ -73,8 +76,7 @@ dns_miab_rm() {
 
   #Remove the challenge record
   _api_path="custom/${fulldomain}/txt"
-  response="$(_miab_rest "$txtvalue" "$_api_path" "DELETE")"
-  _debug response "$response"
+	  _miab_rest "$txtvalue" "$_api_path" "DELETE"
 
   #check if result was good
   if _contains "$response" "updated DNS"; then
@@ -100,10 +102,12 @@ _get_root() {
   _p=1
 
   #get the zones hosed on MIAB server, must be a json stream
-  response="$(_miab_rest "" "zones" "GET")"
-  _debug response "$response"
+  _miab_rest "" "zones" "GET"
 
-  if ! _startswith "$response" "[" || ! _endswith "$response" "]"; then
+  _info "_startswith test:$(_startswith "test" "t")"
+  _info "_endstest test:$(_endswith "test" "t")"
+
+  if ! _is_json "$response"; then
     _err "ERROR fetching domain list"
     _err "$response"
     return 1
@@ -188,6 +192,23 @@ _miab_rest() {
     response="$(_post "$_data" "$_url" "" "$_httpmethod")"
   fi
 
+  _retcode="$?"
+
+  if [ "$_retcode" != "0" ]; then
+    _err "MAAB REST authentication failed on $_httpmethod"
+    return 1
+  fi
+
   _debug response "$response"
-  return "$response"
+  return 0
+}
+
+#Usage: _is_json  "\[\n   "mydomain.com"\n]"
+#Reurns "\[\n   "mydomain.com"\n]"
+#returns the string if it begins and ends with square braces
+_is_json() {
+  _str="$(echo "$1" | _normalizeJson)"
+  _debug2 _str "$_str"
+
+  echo "$_str" | grep '^\[.*\]$' >/dev/null 2>&1
 }
