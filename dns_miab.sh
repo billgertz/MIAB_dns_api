@@ -163,7 +163,6 @@ _retrieve_miab_env() {
   _saveaccountconf_mutable MIAB_Username "$MIAB_Username"
   _saveaccountconf_mutable MIAB_Password "$MIAB_Password"
   _saveaccountconf_mutable MIAB_Server "$MIAB_Server"
-  
   return 0
 }
 
